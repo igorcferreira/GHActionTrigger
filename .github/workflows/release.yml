@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build release binary (arm64)
+        run: |
+          swift build -c release --arch arm64
+          cp .build/arm64-apple-macosx/release/ghaction ghaction-arm64
+
+      - name: Build release binary (x86_64)
+        run: |
+          swift build -c release --arch x86_64
+          cp .build/x86_64-apple-macosx/release/ghaction ghaction-x86_64
+
+      - name: Create universal binary
+        run: |
+          lipo -create -output ghaction ghaction-arm64 ghaction-x86_64
+          chmod +x ghaction
+
+      - name: Verify binary
+        run: |
+          file ghaction
+          ./ghaction --help
+
+      - name: Create tarball
+        run: |
+          tar -czvf ghaction-${{ steps.version.outputs.VERSION }}-macos-universal.tar.gz ghaction
+          shasum -a 256 ghaction-${{ steps.version.outputs.VERSION }}-macos-universal.tar.gz > ghaction-${{ steps.version.outputs.VERSION }}-macos-universal.tar.gz.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.version.outputs.VERSION }}
+          generate_release_notes: true
+          files: |
+            ghaction-${{ steps.version.outputs.VERSION }}-macos-universal.tar.gz
+            ghaction-${{ steps.version.outputs.VERSION }}-macos-universal.tar.gz.sha256
