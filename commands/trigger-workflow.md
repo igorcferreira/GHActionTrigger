@@ -2,6 +2,12 @@
 
 Trigger a GitHub Actions workflow using the ghaction CLI.
 
+## Installation
+
+```bash
+brew install igorcferreira/tap/ghaction
+```
+
 ## Usage
 
 ```

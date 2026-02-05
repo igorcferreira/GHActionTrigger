@@ -2,6 +2,23 @@
 
 The GHActionTrigger is a Swift library and CLI tool which enables developers to trigger GitHub Actions through macOS apps or by CLI commands.
 
+## Installation
+
+### Homebrew (Recommended)
+
+```bash
+brew install igorcferreira/tap/ghaction
+```
+
+### From Source
+
+```bash
+git clone https://github.com/igorcferreira/GHActionTrigger.git
+cd GHActionTrigger
+swift build -c release
+cp .build/release/ghaction /usr/local/bin/
+```
+
 ## Folder Structure
 
 - Sources/GHActionTrigger: Classes related to the Swift library, it holds the main logic.

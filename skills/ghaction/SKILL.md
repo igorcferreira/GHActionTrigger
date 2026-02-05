@@ -2,6 +2,12 @@
 
 This skill teaches agents how to use the ghaction CLI to trigger and monitor GitHub Actions workflows.
 
+## Installation
+
+```bash
+brew install igorcferreira/tap/ghaction
+```
+
 ## When to Use
 
 Use this skill when:

@@ -2,6 +2,12 @@
 
 Monitor and check the status of GitHub Actions workflow runs using the ghaction CLI.
 
+## Installation
+
+```bash
+brew install igorcferreira/tap/ghaction
+```
+
 ## Usage
 
 ```
