@@ -136,6 +136,7 @@ struct TriggerCommand: AsyncParsableCommand {
         var lastJobStates: [Int: (status: WorkflowJobStatus, conclusion: WorkflowJobConclusion?)] = [:]
         var lastRunStatus: WorkflowRunStatus?
         var headerPrinted = false
+        var staleCount = 0
 
         while Date() < deadline {
             let run = try await trigger.getRun(owner: owner, repo: repo, runId: runId)
@@ -166,14 +167,39 @@ struct TriggerCommand: AsyncParsableCommand {
                 }
             }
 
+            // Primary check: run status is completed
             if run.status == .completed {
                 return run
+            }
+
+            // Secondary check: all jobs have completed with conclusions
+            if !jobs.isEmpty && allJobsCompleted(jobs) {
+                // Jobs are done, fetch run one more time to get final status
+                let finalRun = try await trigger.getRun(owner: owner, repo: repo, runId: runId)
+                if finalRun.status == .completed {
+                    return finalRun
+                }
+                // If still not showing completed but jobs are done, increment stale counter
+                staleCount += 1
+                if staleCount >= 3 {
+                    // API is likely lagging, return the run with jobs-based completion
+                    print("Run status: Completed (detected via jobs)")
+                    return finalRun
+                }
+            } else {
+                staleCount = 0
             }
 
             try await Task.sleep(for: .seconds(pollInterval))
         }
 
         throw WorkflowError.timeout(reason: "Workflow run \(runId) did not complete within \(timeout) seconds")
+    }
+
+    private func allJobsCompleted(_ jobs: [WorkflowJob]) -> Bool {
+        return jobs.allSatisfy { job in
+            job.status == .completed && job.conclusion != nil
+        }
     }
 
     private func printJobStatus(_ job: WorkflowJob) {

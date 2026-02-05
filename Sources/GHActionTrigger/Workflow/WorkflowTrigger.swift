@@ -369,20 +369,59 @@ public actor WorkflowTrigger {
         onUpdate: (@Sendable (WorkflowRun) -> Void)? = nil
     ) async throws -> WorkflowRun {
         let deadline = Date().addingTimeInterval(timeout)
+        var lastUpdatedAt: Date?
+        var staleCount = 0
 
         while Date() < deadline {
             let run = try await getRun(owner: owner, repo: repo, runId: runId)
 
             onUpdate?(run)
 
+            // Primary check: run status is completed
             if run.status == .completed {
                 return run
             }
+
+            // Secondary check: all jobs have completed with conclusions
+            let jobs = try await getJobs(owner: owner, repo: repo, runId: runId)
+            if !jobs.isEmpty && allJobsCompleted(jobs) {
+                // Jobs are done, fetch run one more time to get final status
+                let finalRun = try await getRun(owner: owner, repo: repo, runId: runId)
+                if finalRun.status == .completed {
+                    return finalRun
+                }
+                // If still not showing completed but jobs are done, increment stale counter
+                staleCount += 1
+                if staleCount >= 3 {
+                    // API is likely lagging, return the run with jobs-based completion
+                    return finalRun
+                }
+            } else {
+                staleCount = 0
+            }
+
+            // Track updatedAt for staleness detection
+            if let lastUpdate = lastUpdatedAt, run.updatedAt == lastUpdate {
+                // No update detected, but jobs might have progressed
+                // Continue polling with shorter interval
+            }
+            lastUpdatedAt = run.updatedAt
 
             try await Task.sleep(for: .seconds(pollInterval))
         }
 
         throw WorkflowError.timeout(reason: "Workflow run \(runId) did not complete within \(Int(timeout)) seconds")
+    }
+
+    /// Check if all jobs in a workflow run have completed
+    /// - Parameter jobs: Array of workflow jobs
+    /// - Returns: True if all jobs have a conclusion (meaning they've finished)
+    private func allJobsCompleted(_ jobs: [WorkflowJob]) -> Bool {
+        // All jobs must have a conclusion to be considered complete
+        // Jobs without conclusions are still pending/running
+        return jobs.allSatisfy { job in
+            job.status == .completed && job.conclusion != nil
+        }
     }
 
     // MARK: - Private Methods
@@ -396,8 +435,13 @@ public actor WorkflowTrigger {
     }
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        // Add cache-busting to ensure fresh data
+        var mutableRequest = request
+        mutableRequest.cachePolicy = .reloadIgnoringLocalCacheData
+        mutableRequest.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+
         do {
-            return try await urlSession.data(for: request)
+            return try await urlSession.data(for: mutableRequest)
         } catch {
             throw WorkflowError.networkError(underlying: error)
         }

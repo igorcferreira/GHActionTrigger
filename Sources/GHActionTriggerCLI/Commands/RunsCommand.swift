@@ -216,20 +216,19 @@ struct WatchRunCommand: AsyncParsableCommand {
             print("")
 
             if initialRun.status == .completed {
-                printFinalResult(initialRun)
+                await printFinalResult(initialRun, trigger: trigger)
                 return
             }
 
-            let finalRun = try await trigger.waitForCompletion(
-                owner: owner,
-                repo: repo,
+            let finalRun = try await watchWithProgress(
+                trigger: trigger,
                 runId: runId,
-                pollInterval: TimeInterval(pollInterval),
-                timeout: TimeInterval(timeout)
+                pollInterval: pollInterval,
+                timeout: timeout
             )
 
             print("")
-            printFinalResult(finalRun)
+            await printFinalResult(finalRun, trigger: trigger)
         } catch let error as WorkflowError {
             print("")
             print("✗ \(error.localizedDescription)")
@@ -238,6 +237,126 @@ struct WatchRunCommand: AsyncParsableCommand {
             print("")
             print("✗ Failed to watch run: \(error.localizedDescription)")
             throw ExitCode.failure
+        }
+    }
+
+    private func watchWithProgress(
+        trigger: WorkflowTrigger,
+        runId: Int,
+        pollInterval: Int,
+        timeout: Int
+    ) async throws -> WorkflowRun {
+        let deadline = Date().addingTimeInterval(TimeInterval(timeout))
+        var lastJobStates: [Int: (status: WorkflowJobStatus, conclusion: WorkflowJobConclusion?)] = [:]
+        var lastRunStatus: WorkflowRunStatus?
+        var headerPrinted = false
+        var staleCount = 0
+
+        while Date() < deadline {
+            let run = try await trigger.getRun(owner: owner, repo: repo, runId: runId)
+
+            // Print run status changes
+            if run.status != lastRunStatus {
+                lastRunStatus = run.status
+                print("Run status: \(formatStatus(run.status))")
+            }
+
+            // Get and display job progress
+            let jobs = try await trigger.getJobs(owner: owner, repo: repo, runId: runId)
+
+            if !jobs.isEmpty && !headerPrinted {
+                print("")
+                print("Jobs:")
+                headerPrinted = true
+            }
+
+            for job in jobs {
+                let lastState = lastJobStates[job.id]
+                let currentState = (status: job.status, conclusion: job.conclusion)
+
+                // Check if job state changed
+                if lastState?.status != currentState.status || lastState?.conclusion != currentState.conclusion {
+                    lastJobStates[job.id] = currentState
+                    printJobStatus(job)
+                }
+            }
+
+            // Primary check: run status is completed
+            if run.status == .completed {
+                return run
+            }
+
+            // Secondary check: all jobs have completed with conclusions
+            if !jobs.isEmpty && allJobsCompleted(jobs) {
+                // Jobs are done, fetch run one more time to get final status
+                let finalRun = try await trigger.getRun(owner: owner, repo: repo, runId: runId)
+                if finalRun.status == .completed {
+                    return finalRun
+                }
+                // If still not showing completed but jobs are done, increment stale counter
+                staleCount += 1
+                if staleCount >= 3 {
+                    // API is likely lagging, return the run with jobs-based completion
+                    print("Run status: Completed (detected via jobs)")
+                    return finalRun
+                }
+            } else {
+                staleCount = 0
+            }
+
+            try await Task.sleep(for: .seconds(pollInterval))
+        }
+
+        throw WorkflowError.timeout(reason: "Workflow run \(runId) did not complete within \(timeout) seconds")
+    }
+
+    private func allJobsCompleted(_ jobs: [WorkflowJob]) -> Bool {
+        return jobs.allSatisfy { job in
+            job.status == .completed && job.conclusion != nil
+        }
+    }
+
+    private func printJobStatus(_ job: WorkflowJob) {
+        let icon = jobStatusIcon(job)
+        let status = formatJobStatus(job)
+        print("  \(icon) \(job.name): \(status)")
+
+        // Show step progress for in-progress jobs
+        if job.status == .inProgress, let steps = job.steps {
+            for step in steps where step.status == .inProgress {
+                print("      ▸ \(step.name)")
+            }
+        }
+    }
+
+    private func jobStatusIcon(_ job: WorkflowJob) -> String {
+        if let conclusion = job.conclusion {
+            switch conclusion {
+            case .success: return "✓"
+            case .failure, .timedOut: return "✗"
+            case .cancelled, .skipped: return "⊘"
+            default: return "●"
+            }
+        }
+        switch job.status {
+        case .completed: return "●"
+        case .inProgress: return "◐"
+        case .queued, .waiting, .pending, .requested, .unknown: return "○"
+        }
+    }
+
+    private func formatJobStatus(_ job: WorkflowJob) -> String {
+        if let conclusion = job.conclusion {
+            return conclusion.rawValue
+        }
+        switch job.status {
+        case .queued: return "queued"
+        case .inProgress: return "running"
+        case .waiting: return "waiting"
+        case .completed: return "completed"
+        case .pending: return "pending"
+        case .requested: return "requested"
+        case .unknown: return "unknown"
         }
     }
 
@@ -252,7 +371,16 @@ struct WatchRunCommand: AsyncParsableCommand {
         }
     }
 
-    private func printFinalResult(_ run: WorkflowRun) {
+    private func printFinalResult(_ run: WorkflowRun, trigger: WorkflowTrigger) async {
+        // Get final job statuses
+        if let jobs = try? await trigger.getJobs(owner: owner, repo: repo, runId: run.id) {
+            print("Final job results:")
+            for job in jobs {
+                printJobStatus(job)
+            }
+            print("")
+        }
+
         if let conclusion = run.conclusion {
             switch conclusion {
             case .success:
