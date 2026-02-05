@@ -1,0 +1,13 @@
+{
+  "name": "ghaction-cli",
+  "description": "Trigger and monitor GitHub Actions workflows from Claude Code using the ghaction CLI",
+  "version": "1.0.0",
+  "author": {
+    "name": "Igor Ferreira",
+    "email": "igor@igorferreira.dev"
+  },
+  "repository": "https://github.com/igorcferreira/GHActionTrigger",
+  "license": "MIT",
+  "commands": ["./commands/"],
+  "skills": ["./skills/"]
+}

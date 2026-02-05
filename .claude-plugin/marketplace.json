@@ -1,0 +1,19 @@
+{
+  "name": "ghaction-trigger",
+  "owner": {
+    "name": "Igor Ferreira",
+    "email": "igor@igorferreira.dev"
+  },
+  "metadata": {
+    "description": "GitHub Actions trigger and monitoring tools for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "ghaction-cli",
+      "source": ".",
+      "description": "Trigger and monitor GitHub Actions workflows from Claude Code",
+      "version": "1.0.0"
+    }
+  ]
+}
