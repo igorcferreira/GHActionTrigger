@@ -30,35 +30,39 @@ public enum AuthenticationError: Error, LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .noCredentialsAvailable:
-            return "No GitHub credentials available. Run 'ghaction auth login' to authenticate."
+            return String(localized: "auth.error.noCredentialsAvailable", bundle: .module)
         case .providerNotFound(let id):
-            return "Authentication provider '\(id)' not found."
+            return String(format: String(localized: "auth.error.providerNotFound", bundle: .module), id)
         case .noInteractiveProviderAvailable:
-            return "No interactive authentication provider available."
+            return String(localized: "auth.error.noInteractiveProviderAvailable", bundle: .module)
         case .interactiveAuthNotSupported(let provider):
-            return "Provider '\(provider)' does not support interactive authentication."
+            return String(format: String(localized: "auth.error.interactiveAuthNotSupported", bundle: .module), provider)
         case .tokenExpired:
-            return "GitHub token has expired. Please re-authenticate."
+            return String(localized: "auth.error.tokenExpired", bundle: .module)
         case .invalidToken:
-            return "The provided token is invalid or has been revoked."
+            return String(localized: "auth.error.invalidToken", bundle: .module)
         case .emptyToken:
-            return "The token cannot be empty."
+            return String(localized: "auth.error.emptyToken", bundle: .module)
         case .deviceCodeRequestFailed:
-            return "Failed to request device code from GitHub."
+            return String(localized: "auth.error.deviceCodeRequestFailed", bundle: .module)
         case .deviceCodeExpired:
-            return "Device code expired. Please try again."
+            return String(localized: "auth.error.deviceCodeExpired", bundle: .module)
         case .accessDenied:
-            return "Access was denied. The user may have declined authorization."
+            return String(localized: "auth.error.accessDenied", bundle: .module)
         case .tokenRequestFailed(let error, let description):
-            return "Token request failed: \(error)\(description.map { " - \($0)" } ?? "")"
+            if let description {
+                return String(format: String(localized: "auth.error.tokenRequestFailedWithDescription", bundle: .module), error, description)
+            } else {
+                return String(format: String(localized: "auth.error.tokenRequestFailed", bundle: .module), error)
+            }
         case .invalidTokenResponse:
-            return "Received invalid response from GitHub token endpoint."
+            return String(localized: "auth.error.invalidTokenResponse", bundle: .module)
         case .keychainError(let status, let operation):
-            return "Keychain \(operation) failed with status: \(status)"
+            return String(format: String(localized: "auth.error.keychainError", bundle: .module), operation, status)
         case .cannotClearEnvironmentCredentials:
-            return "Cannot clear credentials from environment variables."
+            return String(localized: "auth.error.cannotClearEnvironmentCredentials", bundle: .module)
         case .networkError(let underlying):
-            return "Network error: \(underlying.localizedDescription)"
+            return String(format: String(localized: "auth.error.networkError", bundle: .module), underlying.localizedDescription)
         }
     }
 }

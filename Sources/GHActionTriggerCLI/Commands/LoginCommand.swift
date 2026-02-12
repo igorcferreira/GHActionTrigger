@@ -25,17 +25,17 @@ struct LoginCommand: AsyncParsableCommand {
 
         // Check if client ID is configured
         if resolvedClientId == "YOUR_GITHUB_OAUTH_APP_CLIENT_ID" {
-            print("Error: No GitHub OAuth App Client ID configured.")
+            print(String(localized: "login.error.noClientId", bundle: .module))
             print("")
-            print("To authenticate, you need to:")
-            print("1. Create a GitHub OAuth App at https://github.com/settings/developers")
-            print("2. Enable 'Device Authorization Flow' in the app settings")
-            print("3. Either:")
-            print("   - Set GHACTIONTRIGGER_CLIENT_ID environment variable")
-            print("   - Or use --client-id flag with your Client ID")
+            print(String(localized: "login.instructions.header", bundle: .module))
+            print(String(localized: "login.instructions.step1", bundle: .module))
+            print(String(localized: "login.instructions.step2", bundle: .module))
+            print(String(localized: "login.instructions.step3", bundle: .module))
+            print(String(localized: "login.instructions.step3a", bundle: .module))
+            print(String(localized: "login.instructions.step3b", bundle: .module))
             print("")
-            print("Alternatively, use a Personal Access Token:")
-            print("  ghaction auth token --token <your-pat>")
+            print(String(localized: "login.instructions.alternative", bundle: .module))
+            print(String(localized: "login.instructions.alternativeCommand", bundle: .module))
             throw ExitCode.failure
         }
 
@@ -50,17 +50,17 @@ struct LoginCommand: AsyncParsableCommand {
         let delegate = CLIDeviceFlowDelegate(openBrowser: openBrowser)
         provider.delegate = delegate
 
-        print("Starting GitHub authentication...")
+        print(String(localized: "login.starting", bundle: .module))
 
         do {
             let credentials = try await provider.authenticate()
-            print("\n✓ Successfully authenticated with GitHub!")
+            print("\n" + String(localized: "login.success", bundle: .module))
             if let scope = credentials.scope {
-                print("  Scopes: \(scope)")
+                print(String(format: String(localized: "login.success.scopes", bundle: .module), scope))
             }
         } catch {
             await delegate.deviceFlowDidComplete(success: false)
-            print("\n✗ Authentication failed: \(error.localizedDescription)")
+            print("\n" + String(format: String(localized: "login.failed", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         }
     }
@@ -77,13 +77,13 @@ final class CLIDeviceFlowDelegate: DeviceFlowDelegate, @unchecked Sendable {
     func deviceFlowDidReceiveUserCode(userCode: String, verificationURL: String) async {
         print("")
         print("┌────────────────────────────────────────────────┐")
-        print("│         GitHub Device Authorization            │")
+        print(String(localized: "login.deviceFlow.title", bundle: .module))
         print("├────────────────────────────────────────────────┤")
-        print("│  1. Open: \(verificationURL.padding(toLength: 34, withPad: " ", startingAt: 0)) │")
-        print("│  2. Enter code: \(userCode.padding(toLength: 28, withPad: " ", startingAt: 0)) │")
+        print(String(format: String(localized: "login.deviceFlow.openUrl", bundle: .module), verificationURL.padding(toLength: 34, withPad: " ", startingAt: 0)) + " │")
+        print(String(format: String(localized: "login.deviceFlow.enterCode", bundle: .module), userCode.padding(toLength: 28, withPad: " ", startingAt: 0)) + " │")
         print("└────────────────────────────────────────────────┘")
         print("")
-        print("Waiting for authorization...")
+        print(String(localized: "login.deviceFlow.waiting", bundle: .module))
 
         if openBrowser {
             #if os(macOS)

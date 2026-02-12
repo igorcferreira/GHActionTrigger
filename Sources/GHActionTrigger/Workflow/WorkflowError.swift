@@ -44,51 +44,51 @@ public enum WorkflowError: Error, LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notAuthenticated:
-            return "Not authenticated. Run 'ghaction auth login' or set GITHUB_TOKEN environment variable."
+            return String(localized: "workflow.error.notAuthenticated", bundle: .module)
 
         case .workflowNotFound(let workflow, let repo):
-            return "Workflow '\(workflow)' not found in repository '\(repo)'."
+            return String(format: String(localized: "workflow.error.workflowNotFound", bundle: .module), workflow, repo)
 
         case .repositoryNotFound(let owner, let repo):
-            return "Repository '\(owner)/\(repo)' not found or not accessible."
+            return String(format: String(localized: "workflow.error.repositoryNotFound", bundle: .module), owner, repo)
 
         case .permissionDenied:
-            return "Permission denied. Ensure your token has 'repo' or 'workflow' scope."
+            return String(localized: "workflow.error.permissionDenied", bundle: .module)
 
         case .workflowDispatchNotEnabled(let workflow):
-            return "Workflow '\(workflow)' does not have 'workflow_dispatch' trigger enabled."
+            return String(format: String(localized: "workflow.error.workflowDispatchNotEnabled", bundle: .module), workflow)
 
         case .invalidRef(let ref):
-            return "Invalid git reference '\(ref)'. Must be a branch name, tag, or SHA."
+            return String(format: String(localized: "workflow.error.invalidRef", bundle: .module), ref)
 
         case .rateLimited(let resetAt):
             if let resetAt {
                 let formatter = RelativeDateTimeFormatter()
                 let timeString = formatter.localizedString(for: resetAt, relativeTo: Date())
-                return "API rate limit exceeded. Resets \(timeString)."
+                return String(format: String(localized: "workflow.error.rateLimitedWithReset", bundle: .module), timeString)
             }
-            return "API rate limit exceeded."
+            return String(localized: "workflow.error.rateLimited", bundle: .module)
 
         case .networkError(let underlying):
-            return "Network error: \(underlying.localizedDescription)"
+            return String(format: String(localized: "workflow.error.networkError", bundle: .module), underlying.localizedDescription)
 
         case .httpError(let statusCode, let message):
             if let message {
-                return "HTTP error \(statusCode): \(message)"
+                return String(format: String(localized: "workflow.error.httpErrorWithMessage", bundle: .module), statusCode, message)
             }
-            return "HTTP error \(statusCode)"
+            return String(format: String(localized: "workflow.error.httpError", bundle: .module), statusCode)
 
         case .invalidInput(let key, let reason):
-            return "Invalid input '\(key)': \(reason)"
+            return String(format: String(localized: "workflow.error.invalidInput", bundle: .module), key, reason)
 
         case .runNotFound(let runId, let repo):
-            return "Workflow run \(runId) not found in repository '\(repo)'."
+            return String(format: String(localized: "workflow.error.runNotFound", bundle: .module), runId, repo)
 
         case .timeout(let reason):
-            return "Timed out: \(reason)"
+            return String(format: String(localized: "workflow.error.timeout", bundle: .module), reason)
 
         case .runFailed(let runId, let conclusion):
-            return "Workflow run \(runId) failed with conclusion: \(conclusion.rawValue)"
+            return String(format: String(localized: "workflow.error.runFailed", bundle: .module), runId, conclusion.rawValue)
         }
     }
 }
