@@ -57,11 +57,11 @@ struct ListRunsCommand: AsyncParsableCommand {
             let runs = try await trigger.listRuns(owner: owner, repo: repo, filter: filter)
 
             if runs.isEmpty {
-                print("No workflow runs found.")
+                print(String(localized: "runs.list.noRuns", bundle: .module))
                 return
             }
 
-            print("Recent workflow runs for \(owner)/\(repo):")
+            print(String(format: String(localized: "runs.list.header", bundle: .module), owner, repo))
             print("")
 
             let dateFormatter = RelativeDateTimeFormatter()
@@ -72,16 +72,20 @@ struct ListRunsCommand: AsyncParsableCommand {
                 let timeAgo = dateFormatter.localizedString(for: run.createdAt, relativeTo: Date())
 
                 print("\(statusIcon) #\(run.runNumber) \(run.name ?? "Unnamed")")
-                print("  Status: \(formatStatus(run.status))\(run.conclusion.map { ", \($0.rawValue)" } ?? "")")
-                print("  Branch: \(run.headBranch) | Event: \(run.event) | \(timeAgo)")
-                print("  URL: \(run.htmlUrl)")
+                if let conclusion = run.conclusion {
+                    print(String(format: String(localized: "runs.list.statusWithConclusion", bundle: .module), formatStatus(run.status), conclusion.rawValue))
+                } else {
+                    print(String(format: String(localized: "runs.list.status", bundle: .module), formatStatus(run.status)))
+                }
+                print(String(format: String(localized: "runs.list.details", bundle: .module), run.headBranch, run.event, timeAgo))
+                print(String(format: String(localized: "runs.list.url", bundle: .module), run.htmlUrl.absoluteString))
                 print("")
             }
         } catch let error as WorkflowError {
-            print("✗ \(error.localizedDescription)")
+            print(String(format: String(localized: "runs.list.error", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         } catch {
-            print("✗ Failed to list runs: \(error.localizedDescription)")
+            print(String(format: String(localized: "runs.list.failed", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         }
     }
@@ -104,12 +108,12 @@ struct ListRunsCommand: AsyncParsableCommand {
 
     private func formatStatus(_ status: WorkflowRunStatus) -> String {
         switch status {
-        case .queued: return "Queued"
-        case .inProgress: return "In Progress"
-        case .completed: return "Completed"
-        case .waiting: return "Waiting"
-        case .requested: return "Requested"
-        case .pending: return "Pending"
+        case .queued: return String(localized: "trigger.status.queued", bundle: .module)
+        case .inProgress: return String(localized: "trigger.status.inProgress", bundle: .module)
+        case .completed: return String(localized: "trigger.status.completed", bundle: .module)
+        case .waiting: return String(localized: "trigger.status.waiting", bundle: .module)
+        case .requested: return String(localized: "trigger.status.requested", bundle: .module)
+        case .pending: return String(localized: "trigger.status.pending", bundle: .module)
         }
     }
 }
@@ -143,38 +147,38 @@ struct GetRunCommand: AsyncParsableCommand {
             dateFormatter.dateStyle = .medium
             dateFormatter.timeStyle = .short
 
-            print("Workflow Run #\(run.runNumber)")
+            print(String(format: String(localized: "runs.get.header", bundle: .module), run.runNumber))
             print("")
-            print("  Name:       \(run.name ?? "Unnamed")")
-            print("  ID:         \(run.id)")
-            print("  Status:     \(formatStatus(run.status))")
+            print(String(format: String(localized: "runs.get.name", bundle: .module), run.name ?? "Unnamed"))
+            print(String(format: String(localized: "runs.get.id", bundle: .module), run.id))
+            print(String(format: String(localized: "runs.get.status", bundle: .module), formatStatus(run.status)))
             if let conclusion = run.conclusion {
-                print("  Conclusion: \(conclusion.rawValue)")
+                print(String(format: String(localized: "runs.get.conclusion", bundle: .module), conclusion.rawValue))
             }
-            print("  Event:      \(run.event)")
-            print("  Branch:     \(run.headBranch)")
-            print("  Commit:     \(String(run.headSha.prefix(7)))")
-            print("  Attempt:    \(run.runAttempt)")
-            print("  Created:    \(dateFormatter.string(from: run.createdAt))")
-            print("  Updated:    \(dateFormatter.string(from: run.updatedAt))")
-            print("  URL:        \(run.htmlUrl)")
+            print(String(format: String(localized: "runs.get.event", bundle: .module), run.event))
+            print(String(format: String(localized: "runs.get.branch", bundle: .module), run.headBranch))
+            print(String(format: String(localized: "runs.get.commit", bundle: .module), String(run.headSha.prefix(7))))
+            print(String(format: String(localized: "runs.get.attempt", bundle: .module), run.runAttempt))
+            print(String(format: String(localized: "runs.get.created", bundle: .module), dateFormatter.string(from: run.createdAt)))
+            print(String(format: String(localized: "runs.get.updated", bundle: .module), dateFormatter.string(from: run.updatedAt)))
+            print(String(format: String(localized: "runs.get.url", bundle: .module), run.htmlUrl.absoluteString))
         } catch let error as WorkflowError {
-            print("✗ \(error.localizedDescription)")
+            print(String(format: String(localized: "runs.get.error", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         } catch {
-            print("✗ Failed to get run: \(error.localizedDescription)")
+            print(String(format: String(localized: "runs.get.failed", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         }
     }
 
     private func formatStatus(_ status: WorkflowRunStatus) -> String {
         switch status {
-        case .queued: return "Queued"
-        case .inProgress: return "In Progress"
-        case .completed: return "Completed"
-        case .waiting: return "Waiting"
-        case .requested: return "Requested"
-        case .pending: return "Pending"
+        case .queued: return String(localized: "trigger.status.queued", bundle: .module)
+        case .inProgress: return String(localized: "trigger.status.inProgress", bundle: .module)
+        case .completed: return String(localized: "trigger.status.completed", bundle: .module)
+        case .waiting: return String(localized: "trigger.status.waiting", bundle: .module)
+        case .requested: return String(localized: "trigger.status.requested", bundle: .module)
+        case .pending: return String(localized: "trigger.status.pending", bundle: .module)
         }
     }
 }
@@ -211,8 +215,8 @@ struct WatchRunCommand: AsyncParsableCommand {
             // Get initial run info
             let initialRun = try await trigger.getRun(owner: owner, repo: repo, runId: runId)
 
-            print("Watching workflow run #\(initialRun.runNumber) (\(initialRun.name ?? "Unnamed"))...")
-            print("  URL: \(initialRun.htmlUrl)")
+            print(String(format: String(localized: "runs.watch.watching", bundle: .module), initialRun.runNumber, initialRun.name ?? "Unnamed"))
+            print(String(format: String(localized: "runs.watch.url", bundle: .module), initialRun.htmlUrl.absoluteString))
             print("")
 
             if initialRun.status == .completed {
@@ -231,11 +235,11 @@ struct WatchRunCommand: AsyncParsableCommand {
             await printFinalResult(finalRun, trigger: trigger)
         } catch let error as WorkflowError {
             print("")
-            print("✗ \(error.localizedDescription)")
+            print(String(format: String(localized: "runs.watch.error", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         } catch {
             print("")
-            print("✗ Failed to watch run: \(error.localizedDescription)")
+            print(String(format: String(localized: "runs.watch.failed", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         }
     }
@@ -258,7 +262,7 @@ struct WatchRunCommand: AsyncParsableCommand {
             // Print run status changes
             if run.status != lastRunStatus {
                 lastRunStatus = run.status
-                print("Run status: \(formatStatus(run.status))")
+                print(String(format: String(localized: "trigger.runStatus", bundle: .module), formatStatus(run.status)))
             }
 
             // Get and display job progress
@@ -266,7 +270,7 @@ struct WatchRunCommand: AsyncParsableCommand {
 
             if !jobs.isEmpty && !headerPrinted {
                 print("")
-                print("Jobs:")
+                print(String(localized: "trigger.jobs", bundle: .module))
                 headerPrinted = true
             }
 
@@ -297,7 +301,7 @@ struct WatchRunCommand: AsyncParsableCommand {
                 staleCount += 1
                 if staleCount >= 3 {
                     // API is likely lagging, return the run with jobs-based completion
-                    print("Run status: Completed (detected via jobs)")
+                    print(String(localized: "trigger.runStatus.completedByJobs", bundle: .module))
                     return finalRun
                 }
             } else {
@@ -350,31 +354,31 @@ struct WatchRunCommand: AsyncParsableCommand {
             return conclusion.rawValue
         }
         switch job.status {
-        case .queued: return "queued"
-        case .inProgress: return "running"
-        case .waiting: return "waiting"
-        case .completed: return "completed"
-        case .pending: return "pending"
-        case .requested: return "requested"
-        case .unknown: return "unknown"
+        case .queued: return String(localized: "trigger.jobStatus.queued", bundle: .module)
+        case .inProgress: return String(localized: "trigger.jobStatus.running", bundle: .module)
+        case .waiting: return String(localized: "trigger.jobStatus.waiting", bundle: .module)
+        case .completed: return String(localized: "trigger.jobStatus.completed", bundle: .module)
+        case .pending: return String(localized: "trigger.jobStatus.pending", bundle: .module)
+        case .requested: return String(localized: "trigger.jobStatus.requested", bundle: .module)
+        case .unknown: return String(localized: "trigger.jobStatus.unknown", bundle: .module)
         }
     }
 
     private func formatStatus(_ status: WorkflowRunStatus) -> String {
         switch status {
-        case .queued: return "Queued"
-        case .inProgress: return "In Progress"
-        case .completed: return "Completed"
-        case .waiting: return "Waiting"
-        case .requested: return "Requested"
-        case .pending: return "Pending"
+        case .queued: return String(localized: "trigger.status.queued", bundle: .module)
+        case .inProgress: return String(localized: "trigger.status.inProgress", bundle: .module)
+        case .completed: return String(localized: "trigger.status.completed", bundle: .module)
+        case .waiting: return String(localized: "trigger.status.waiting", bundle: .module)
+        case .requested: return String(localized: "trigger.status.requested", bundle: .module)
+        case .pending: return String(localized: "trigger.status.pending", bundle: .module)
         }
     }
 
     private func printFinalResult(_ run: WorkflowRun, trigger: WorkflowTrigger) async {
         // Get final job statuses
         if let jobs = try? await trigger.getJobs(owner: owner, repo: repo, runId: run.id) {
-            print("Final job results:")
+            print(String(localized: "trigger.finalJobResults", bundle: .module))
             for job in jobs {
                 printJobStatus(job)
             }
@@ -384,21 +388,21 @@ struct WatchRunCommand: AsyncParsableCommand {
         if let conclusion = run.conclusion {
             switch conclusion {
             case .success:
-                print("✓ Workflow run completed successfully!")
+                print(String(localized: "trigger.result.success", bundle: .module))
             case .failure:
-                print("✗ Workflow run failed.")
+                print(String(localized: "trigger.result.failed", bundle: .module))
             case .cancelled:
-                print("⚠ Workflow run was cancelled.")
+                print(String(localized: "trigger.result.cancelled", bundle: .module))
             case .skipped:
-                print("⚠ Workflow run was skipped.")
+                print(String(localized: "trigger.result.skipped", bundle: .module))
             case .timedOut:
-                print("✗ Workflow run timed out.")
+                print(String(localized: "trigger.result.timedOut", bundle: .module))
             default:
-                print("⚠ Workflow run completed with conclusion: \(conclusion.rawValue)")
+                print(String(format: String(localized: "trigger.result.otherConclusion", bundle: .module), conclusion.rawValue))
             }
         } else {
-            print("⚠ Workflow run completed with unknown conclusion.")
+            print(String(localized: "trigger.result.unknownConclusion", bundle: .module))
         }
-        print("  View at: \(run.htmlUrl)")
+        print(String(format: String(localized: "trigger.viewAt", bundle: .module), run.htmlUrl.absoluteString))
     }
 }

@@ -17,35 +17,35 @@ struct TokenCommand: AsyncParsableCommand {
         if let provided = token {
             tokenValue = provided
         } else {
-            print("Enter your GitHub Personal Access Token: ", terminator: "")
+            print(String(localized: "token.prompt", bundle: .module), terminator: "")
             fflush(stdout)
 
             guard let input = readLine(), !input.isEmpty else {
-                print("No token provided.")
+                print(String(localized: "token.error.noTokenProvided", bundle: .module))
                 throw ExitCode.failure
             }
             tokenValue = input
         }
 
         guard !tokenValue.isEmpty else {
-            print("Token cannot be empty.")
+            print(String(localized: "token.error.emptyToken", bundle: .module))
             throw ExitCode.failure
         }
 
         let storage = KeychainStorage()
         let patProvider = PATAuthProvider(storage: storage)
 
-        print("Validating token...")
+        print(String(localized: "token.validating", bundle: .module))
 
         do {
             let credentials = try await patProvider.storeToken(tokenValue)
-            print("✓ Token validated and stored successfully!")
-            print("  Token type: \(credentials.tokenType.rawValue)")
+            print(String(localized: "token.success", bundle: .module))
+            print(String(format: String(localized: "token.success.type", bundle: .module), credentials.tokenType.rawValue))
         } catch AuthenticationError.invalidToken {
-            print("✗ Invalid token. Please check your token and try again.")
+            print(String(localized: "token.error.invalid", bundle: .module))
             throw ExitCode.failure
         } catch {
-            print("✗ Failed to store token: \(error.localizedDescription)")
+            print(String(format: String(localized: "token.error.storeFailed", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         }
     }

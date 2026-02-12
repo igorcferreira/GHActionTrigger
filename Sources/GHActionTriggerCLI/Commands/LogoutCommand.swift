@@ -13,13 +13,13 @@ struct LogoutCommand: AsyncParsableCommand {
 
     func run() async throws {
         if !force {
-            print("This will remove all stored GitHub credentials.")
-            print("Continue? [y/N] ", terminator: "")
+            print(String(localized: "logout.confirmation", bundle: .module))
+            print(String(localized: "logout.confirmationPrompt", bundle: .module), terminator: "")
             fflush(stdout)
 
             guard let response = readLine()?.lowercased(),
                   response == "y" || response == "yes" else {
-                print("Cancelled.")
+                print(String(localized: "logout.cancelled", bundle: .module))
                 return
             }
         }
@@ -29,9 +29,9 @@ struct LogoutCommand: AsyncParsableCommand {
 
         do {
             try await authManager.logout()
-            print("✓ Successfully logged out.")
+            print(String(localized: "logout.success", bundle: .module))
         } catch {
-            print("✗ Failed to logout: \(error.localizedDescription)")
+            print(String(format: String(localized: "logout.failed", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         }
     }

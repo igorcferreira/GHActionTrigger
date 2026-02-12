@@ -15,27 +15,27 @@ struct StatusCommand: AsyncParsableCommand {
         let status = await authManager.status()
 
         if status.isAuthenticated {
-            print("✓ Authenticated with GitHub")
+            print(String(localized: "status.authenticated", bundle: .module))
             if let provider = status.provider {
-                print("  Provider: \(provider)")
+                print(String(format: String(localized: "status.authenticated.provider", bundle: .module), provider))
             }
             if let tokenType = status.tokenType {
-                print("  Token type: \(tokenType.rawValue)")
+                print(String(format: String(localized: "status.authenticated.tokenType", bundle: .module), tokenType.rawValue))
             }
             if let scope = status.scope {
-                print("  Scopes: \(scope)")
+                print(String(format: String(localized: "status.authenticated.scopes", bundle: .module), scope))
             }
             if let expiresAt = status.expiresAt {
                 let formatter = RelativeDateTimeFormatter()
-                print("  Expires: \(formatter.localizedString(for: expiresAt, relativeTo: Date()))")
+                print(String(format: String(localized: "status.authenticated.expires", bundle: .module), formatter.localizedString(for: expiresAt, relativeTo: Date())))
             }
         } else {
-            print("✗ Not authenticated")
-            print("  Run 'ghaction auth login' to authenticate")
+            print(String(localized: "status.notAuthenticated", bundle: .module))
+            print(String(localized: "status.notAuthenticated.instruction1", bundle: .module))
 
             // Check if GITHUB_TOKEN is expected but missing
             if ProcessInfo.processInfo.environment["GITHUB_TOKEN"] == nil {
-                print("  Or set GITHUB_TOKEN environment variable")
+                print(String(localized: "status.notAuthenticated.instruction2", bundle: .module))
             }
         }
     }

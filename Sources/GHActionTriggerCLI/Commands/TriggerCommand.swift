@@ -40,8 +40,8 @@ struct TriggerCommand: AsyncParsableCommand {
             for inputPair in input {
                 let parts = inputPair.split(separator: "=", maxSplits: 1)
                 guard parts.count == 2 else {
-                    print("✗ Invalid input format: '\(inputPair)'")
-                    print("  Expected format: key=value")
+                    print(String(format: String(localized: "trigger.invalidInputFormat", bundle: .module), inputPair))
+                    print(String(localized: "trigger.invalidInputFormat.expected", bundle: .module))
                     throw ExitCode.failure
                 }
                 parsedInputs[String(parts[0])] = String(parts[1])
@@ -61,12 +61,12 @@ struct TriggerCommand: AsyncParsableCommand {
         let authManager = AuthenticationManager(storage: storage)
         let trigger = WorkflowTrigger(authManager: authManager)
 
-        print("Triggering workflow '\(workflow)' on \(owner)/\(repo)...")
+        print(String(format: String(localized: "trigger.triggering", bundle: .module), workflow, owner, repo))
         if let inputs, !inputs.isEmpty {
-            print("  Ref: \(ref)")
-            print("  Inputs: \(inputs.map { "\($0.key)=\($0.value)" }.joined(separator: ", "))")
+            print(String(format: String(localized: "trigger.ref", bundle: .module), ref))
+            print(String(format: String(localized: "trigger.inputs", bundle: .module), inputs.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")))
         } else {
-            print("  Ref: \(ref)")
+            print(String(format: String(localized: "trigger.ref", bundle: .module), ref))
         }
 
         do {
@@ -83,10 +83,10 @@ struct TriggerCommand: AsyncParsableCommand {
 
             try await trigger.trigger(workflow: workflowId, ref: ref, inputs: inputs)
             print("")
-            print("✓ Workflow dispatch triggered successfully!")
+            print(String(localized: "trigger.success", bundle: .module))
 
             if wait {
-                print("  Waiting for workflow run to start...")
+                print(String(localized: "trigger.waiting", bundle: .module))
 
                 guard let run = try await trigger.findRecentRun(
                     workflow: workflowId,
@@ -94,13 +94,13 @@ struct TriggerCommand: AsyncParsableCommand {
                     excludeRunIds: existingRunIds
                 ) else {
                     print("")
-                    print("⚠ Could not find workflow run. Check manually:")
-                    print("  https://github.com/\(owner)/\(repo)/actions")
+                    print(String(localized: "trigger.warning.notFound", bundle: .module))
+                    print(String(format: String(localized: "trigger.warning.checkUrl", bundle: .module), owner, repo))
                     return
                 }
 
-                print("  Found run #\(run.runNumber) (ID: \(run.id))")
-                print("  View at: \(run.htmlUrl)")
+                print(String(format: String(localized: "trigger.foundRun", bundle: .module), run.runNumber, run.id))
+                print(String(format: String(localized: "trigger.viewAt", bundle: .module), run.htmlUrl.absoluteString))
                 print("")
 
                 let finalRun = try await waitWithProgress(
@@ -113,15 +113,15 @@ struct TriggerCommand: AsyncParsableCommand {
                 print("")
                 await printFinalResult(finalRun, trigger: trigger)
             } else {
-                print("  View at: https://github.com/\(owner)/\(repo)/actions")
+                print(String(format: String(localized: "trigger.viewAtGeneric", bundle: .module), owner, repo))
             }
         } catch let error as WorkflowError {
             print("")
-            print("✗ \(error.localizedDescription)")
+            print(String(format: String(localized: "trigger.error.prefix", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         } catch {
             print("")
-            print("✗ Failed to trigger workflow: \(error.localizedDescription)")
+            print(String(format: String(localized: "trigger.error.failed", bundle: .module), error.localizedDescription))
             throw ExitCode.failure
         }
     }
@@ -144,7 +144,7 @@ struct TriggerCommand: AsyncParsableCommand {
             // Print run status changes
             if run.status != lastRunStatus {
                 lastRunStatus = run.status
-                print("Run status: \(formatRunStatus(run.status))")
+                print(String(format: String(localized: "trigger.runStatus", bundle: .module), formatRunStatus(run.status)))
             }
 
             // Get and display job progress
@@ -152,7 +152,7 @@ struct TriggerCommand: AsyncParsableCommand {
 
             if !jobs.isEmpty && !headerPrinted {
                 print("")
-                print("Jobs:")
+                print(String(localized: "trigger.jobs", bundle: .module))
                 headerPrinted = true
             }
 
@@ -183,7 +183,7 @@ struct TriggerCommand: AsyncParsableCommand {
                 staleCount += 1
                 if staleCount >= 3 {
                     // API is likely lagging, return the run with jobs-based completion
-                    print("Run status: Completed (detected via jobs)")
+                    print(String(localized: "trigger.runStatus.completedByJobs", bundle: .module))
                     return finalRun
                 }
             } else {
@@ -236,31 +236,31 @@ struct TriggerCommand: AsyncParsableCommand {
             return conclusion.rawValue
         }
         switch job.status {
-        case .queued: return "queued"
-        case .inProgress: return "running"
-        case .waiting: return "waiting"
-        case .completed: return "completed"
-        case .pending: return "pending"
-        case .requested: return "requested"
-        case .unknown: return "unknown"
+        case .queued: return String(localized: "trigger.jobStatus.queued", bundle: .module)
+        case .inProgress: return String(localized: "trigger.jobStatus.running", bundle: .module)
+        case .waiting: return String(localized: "trigger.jobStatus.waiting", bundle: .module)
+        case .completed: return String(localized: "trigger.jobStatus.completed", bundle: .module)
+        case .pending: return String(localized: "trigger.jobStatus.pending", bundle: .module)
+        case .requested: return String(localized: "trigger.jobStatus.requested", bundle: .module)
+        case .unknown: return String(localized: "trigger.jobStatus.unknown", bundle: .module)
         }
     }
 
     private func formatRunStatus(_ status: WorkflowRunStatus) -> String {
         switch status {
-        case .queued: return "Queued"
-        case .inProgress: return "In Progress"
-        case .completed: return "Completed"
-        case .waiting: return "Waiting"
-        case .requested: return "Requested"
-        case .pending: return "Pending"
+        case .queued: return String(localized: "trigger.status.queued", bundle: .module)
+        case .inProgress: return String(localized: "trigger.status.inProgress", bundle: .module)
+        case .completed: return String(localized: "trigger.status.completed", bundle: .module)
+        case .waiting: return String(localized: "trigger.status.waiting", bundle: .module)
+        case .requested: return String(localized: "trigger.status.requested", bundle: .module)
+        case .pending: return String(localized: "trigger.status.pending", bundle: .module)
         }
     }
 
     private func printFinalResult(_ run: WorkflowRun, trigger: WorkflowTrigger) async {
         // Get final job statuses
         if let jobs = try? await trigger.getJobs(owner: owner, repo: repo, runId: run.id) {
-            print("Final job results:")
+            print(String(localized: "trigger.finalJobResults", bundle: .module))
             for job in jobs {
                 printJobStatus(job)
             }
@@ -270,21 +270,21 @@ struct TriggerCommand: AsyncParsableCommand {
         if let conclusion = run.conclusion {
             switch conclusion {
             case .success:
-                print("✓ Workflow run completed successfully!")
+                print(String(localized: "trigger.result.success", bundle: .module))
             case .failure:
-                print("✗ Workflow run failed.")
+                print(String(localized: "trigger.result.failed", bundle: .module))
             case .cancelled:
-                print("⚠ Workflow run was cancelled.")
+                print(String(localized: "trigger.result.cancelled", bundle: .module))
             case .skipped:
-                print("⚠ Workflow run was skipped.")
+                print(String(localized: "trigger.result.skipped", bundle: .module))
             case .timedOut:
-                print("✗ Workflow run timed out.")
+                print(String(localized: "trigger.result.timedOut", bundle: .module))
             default:
-                print("⚠ Workflow run completed with conclusion: \(conclusion.rawValue)")
+                print(String(format: String(localized: "trigger.result.otherConclusion", bundle: .module), conclusion.rawValue))
             }
         } else {
-            print("⚠ Workflow run completed with unknown conclusion.")
+            print(String(localized: "trigger.result.unknownConclusion", bundle: .module))
         }
-        print("  View at: \(run.htmlUrl)")
+        print(String(format: String(localized: "trigger.viewAt", bundle: .module), run.htmlUrl.absoluteString))
     }
 }
